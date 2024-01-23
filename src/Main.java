@@ -1,12 +1,30 @@
 import java.io.*;
 import java.util.*;
+
 public class Main {
     public static void main(String[] args) {
-        String res = compress("research triangle rotation dividend weakness survival reckless analysis surprise opponent emphasis practice restless unlikely monopoly decisive password relation workshop forecast profound civilian interest midnight creation behavior exchange perceive aviation ordinary ideology exercise resident");
-        System.out.println(res);
+        System.out.println(new File(".").getAbsoluteFile());
+        if (args.length < 2) { //need to change this to show compress/decompress
+            //String res = compressString("research triangle rotation dividend weakness survival reckless analysis surprise opponent emphasis practice restless unlikely monopoly decisive password relation workshop forecast profound civilian interest midnight creation behavior exchange perceive aviation ordinary ideology exercise resident");
+            String res = compressString("hello");
+            System.out.println(res);
+            return;
+        }
+
+
+        if (args[0].equals("decompress")) {
+            decompress(args[1], args[2]); //should later add this on top of the node
+        } else if (args[0].equals("compress")) {
+            System.out.println(compressString("hello"));
+        } else {
+            System.out.println("invalid parameter");
+        }
+
+
     }
 
-    private static String compress(String s) {
+
+    private static String compressString(String s) {
         if (s.isEmpty() || s.length() == 1) return s;
         int[] freqTable = new int[128];
 
@@ -16,7 +34,7 @@ public class Main {
             freqTable[c]++;
         }
 
-        PriorityQueue<Node> pq = new PriorityQueue<>((a,b) -> a.freq - b.freq);
+        PriorityQueue<Node> pq = new PriorityQueue<>((a, b) -> a.freq - b.freq);
 
         for (int i = 0; i < freqTable.length; i++) {
             if (freqTable[i] == 0) continue;
@@ -39,6 +57,61 @@ public class Main {
         return compressedString;
     }
 
+    private static void decompress(String treeFileName, String huffFileName) {
+        try {
+            File file = new File(huffFileName);
+            FileInputStream fst = new FileInputStream(file); //should use datastream for efficiency for larger files
+            byte[] bArray = new byte[(int) file.length()];
+            fst.read(bArray);
+            fst.close();
+
+            try {
+                File treeFile = new File(treeFileName);
+                FileInputStream treeFst = new FileInputStream(treeFile);
+                ObjectInputStream treeInputStream = new ObjectInputStream(treeFst);
+                Object node = treeInputStream.readObject();
+                treeInputStream.close();
+                treeFst.close();
+                decompressBinary(bArray, (Node) node);
+            } catch (ClassNotFoundException ex) {
+                System.out.println("Type of class not found");
+            }
+
+
+        } catch (IOException ex) {
+            System.out.println("File not Found");
+        }
+
+    }
+
+    public static void decompressBinary(byte[] binaryTree, Node root) {
+        Node ptr = root;
+        StringBuilder decompressedString = new StringBuilder();
+        for (int i = 0; i < binaryTree.length; i++) {
+            byte b = binaryTree[i];
+            ptr = (b == 0) ? ptr.left : ptr.right;
+            if (ptr.left == null && ptr.right == null) {
+                decompressedString.append(ptr.ch);
+                ptr = root;
+            }
+        }
+        System.out.println(decompressedString);
+    }
+
+
+    /*
+
+    returns the string (as a builder obj to save memory)
+     */
+    public static StringBuilder dfsBinaryTree(StringBuilder sb, Node n, byte[] tree, int idx) {
+        if (tree[idx] == 0) {
+            if (n.left != null) return dfsBinaryTree(sb, n.left, tree, idx + 1);
+        }
+        return dfsBinaryTree(sb, n.right, tree, idx + 1);
+
+        
+    }
+
     public static void createEncodedFile(String s) {
         System.out.println(s.length());
         BitSet bs = new BitSet(1);
@@ -59,7 +132,7 @@ public class Main {
     }
 
     /*
-    Have to append this to the start of the bytestream of the huffman generated code later on.
+    Have to append this to the start of the byte stream of the huffman generated code later on.
      */
     public static void saveHuffmanTree(String name, Node treeRoot) {
         try {
@@ -125,10 +198,13 @@ public class Main {
         int freq;
 
 
-        private Node() {}
+        private Node() {
+        }
+
         private Node(int freq) {
             this.freq = freq;
         }
+
         private Node(char ch, int freq) {
             this.ch = ch;
             this.freq = freq;
